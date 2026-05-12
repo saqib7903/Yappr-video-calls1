@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import useAuthUser from '../hooks/useAuthUser';
-import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast, { LoaderIcon } from 'react-hot-toast';
 import { completeOnboarding } from '../lib/api';
 import { CameraIcon, MapPinIcon, ShipWheelIcon, ShuffleIcon } from 'lucide-react';
@@ -11,20 +11,20 @@ const OnboardingPage = () => {
   const { authUser } = useAuthUser();
   const queryClient = useQueryClient();
 
-  const [formState , setFormState] = useState({
+  const [formState, setFormState] = useState({
     fullName: authUser?.fullName || "",
     bio: authUser?.bio || "",
     nativeLanguage: authUser?.nativeLanguage || "",
     learningLanguage: authUser?.learningLanguage || "",
     location: authUser?.location || "",
-    profilePic: authUser?.profilePicture || "",
+    profilePic: authUser?.profilePic || "",
   });
 
-  const {mutate:onboardingMutation , isPending} = useMutation({
+  const { mutate: onboardingMutation, isPending } = useMutation({
     mutationFn: completeOnboarding,
     onSuccess: () => {
       toast.success("Onboarding completed successfully!");
-      queryClient.invalidateQueries({queryKey: ["authUser"]})
+      queryClient.invalidateQueries({ queryKey: ["authUser"] })
     },
     onError: (error) => {
       toast.error(error?.response?.data?.message || "Failed to complete onboarding");
@@ -33,58 +33,55 @@ const OnboardingPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     onboardingMutation(formState)
   }
 
   const handleRandomAvatar = () => {
-     const idx = Math.floor(Math.random() * 100) + 1; // 1-100 included
-    const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
+  const randomSeed = Math.random().toString(36).substring(2, 8);
+  const randomAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${randomSeed}`;
+  setFormState((prev) => ({ ...prev, profilePic: randomAvatar }));
+  toast.success("Random profile picture generated!");
+}
 
-    setFormState({ ...formState, profilePic: randomAvatar });
-    toast.success("Random profile picture generated!");
-  }
   return (
-  <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
+      <div className="card bg-base-200 w-full max-w-3xl shadow-xl">
+        <div className="card-body p-6 sm:p-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6">Complete Your Profile</h1>
 
-    <div className="card bg-base-200 w-full max-w-3xl shadow-xl">
+          <form onSubmit={handleSubmit}>
 
-      <div className="card-body p-6 sm:p-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6">Complete Your Profile</h1>
+            {/* Profile Picture */}
+            <div className="flex flex-col items-center justify-center space-y-4 mb-6">
 
-        <form onSubmit={handleSubmit}>
-          {/* Profile Picture */}
-
-          <div className="flex flex-col items-center justify-center space-y-4">
-            {/* image preview */}
-              <div className="size-32 rounded-full bg-base-300 overflow-hidden">
-                {formState.profilePic ? (
-                  <img
-                    src={formState.profilePic}
-                    alt="Profile Preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <CameraIcon className="size-12 text-base-content opacity-40" />
-                  </div>
-                )}
+              {/* Image Preview */}
+              <div className="avatar">
+                <div className="size-32 rounded-full bg-base-300 overflow-hidden">
+                  {formState.profilePic ? (
+                    <img
+                      key={formState.profilePic}
+                      src={formState.profilePic}
+                      alt="Profile Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <CameraIcon className="size-12 text-base-content opacity-40" />
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/*generate random image*/}
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={handleRandomAvatar} className="btn btn-accent">
-                  <ShuffleIcon className="size-4 mr-2" />
-                  Generate Random Avatar
-                </button>
-              </div>
+              {/* Generate Random Avatar Button */}
+              <button type="button" onClick={handleRandomAvatar} className="btn btn-accent">
+                <ShuffleIcon className="size-4 mr-2" />
+                Generate Random Avatar
+              </button>
 
+            </div>
 
-              
-            
-          </div>
-            {/*Full Name*/}
-                  <div className="form-control">
+            {/* Full Name */}
+            <div className="form-control mb-4">
               <label className="label">
                 <span className="label-text">Full Name</span>
               </label>
@@ -99,7 +96,7 @@ const OnboardingPage = () => {
             </div>
 
             {/* Bio */}
-            <div className="form-control">
+            <div className="form-control mb-4">
               <label className="label">
                 <span className="label-text">Bio</span>
               </label>
@@ -113,13 +110,14 @@ const OnboardingPage = () => {
             </div>
 
             {/* Languages */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              { /* Native Language */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+              {/* Native Language */}
               <div className="form-control">
                 <label className="label">
                   <span className="label-text">Native Language</span>
                 </label>
-                   <select
+                <select
                   name="nativeLanguage"
                   value={formState.nativeLanguage}
                   onChange={(e) => setFormState({ ...formState, nativeLanguage: e.target.value })}
@@ -132,11 +130,10 @@ const OnboardingPage = () => {
                     </option>
                   ))}
                 </select>
-
               </div>
 
-              { /* Learning Language */}
-               <div className="form-control">
+              {/* Learning Language */}
+              <div className="form-control">
                 <label className="label">
                   <span className="label-text">Learning Language</span>
                 </label>
@@ -155,9 +152,10 @@ const OnboardingPage = () => {
                 </select>
               </div>
 
-              {/* Location */}
             </div>
-               <div className="form-control mb-4">
+
+            {/* Location */}
+            <div className="form-control mb-6">
               <label className="label">
                 <span className="label-text">Location</span>
               </label>
@@ -175,7 +173,7 @@ const OnboardingPage = () => {
             </div>
 
             {/* Submit Button */}
-             <button className="btn btn-primary w-full" disabled={isPending} type="submit">
+            <button className="btn btn-primary w-full" disabled={isPending} type="submit">
               {!isPending ? (
                 <>
                   <ShipWheelIcon className="size-5 mr-2" />
@@ -189,15 +187,11 @@ const OnboardingPage = () => {
               )}
             </button>
 
-            
-        </form>
-
+          </form>
+        </div>
       </div>
-
     </div>
-
-  </div>
-)
+  )
 }
 
 export default OnboardingPage
